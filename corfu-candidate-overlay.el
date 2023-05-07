@@ -66,7 +66,7 @@
   '((t (:inherit 'corfu--candidate-overlay-face :underline t)))
   "Face used for the overlay when there is only one candidate.")
 
-(defun corfu--candiate-overlay-prepare (beg end)
+(defun corfu--candiate-overlay-prepare (position)
   "Sets the default properties of the candidates overlay.
        The overlay can be dismissed with a mouse click."
   (when (not corfu--candidate-overlay-map)
@@ -77,15 +77,23 @@
                   (delete-overlay corfu--candidate-overlay))))
 
   (if corfu--candidate-overlay
-      (move-overlay corfu--candidate-overlay end end)
+      (move-overlay corfu--candidate-overlay position position)
     (progn
-      (setq corfu--candidate-overlay (make-overlay end end nil))
+      (setq corfu--candidate-overlay (make-overlay position position nil))
       ;; priority of 1k is the value used by Corfu.
       (overlay-put corfu--candidate-overlay  'priority 1000))))
 
-(defun corfu--candidate-overlay-update (beg end prefix candidate how-many-candidates)
+(defun corfu--get-overlay-property (property)
+  "Returns the value of overlays' property"
+  (overlay-get corfu--candidate-overlay property))
+
+(defun corfu--set-overlay-property (property value)
+  "Returns the value of overlays' property"
+  (overlay-put corfu--candidate-overlay property value))
+
+(defun corfu--candidate-overlay-update (position prefix candidate how-many-candidates)
   "Updates the candidate overlay with the first candidate found by Corfu."
-  (corfu--candiate-overlay-prepare beg end)
+  (corfu--candiate-overlay-prepare position)
 
   (unless (string-empty-p candidate)
     (add-text-properties 0 1 '(cursor 1) candidate))
@@ -96,10 +104,11 @@
   ;; keep-up. We will need to use those stored values then to still
   ;; show the overlay with a meaningful suggestion
   ;; (i.e. the last one found)
-  (overlay-put corfu--candidate-overlay  'corfu-candidate candidate)
-  (overlay-put corfu--candidate-overlay  'corfu-prefix    prefix)
+  (corfu--set-overlay-property  'corfu-candidate candidate)
+  (corfu--set-overlay-property  'corfu-prefix    prefix)
+  (corfu--set-overlay-property  'corfu-count     how-many-candidates)
   ;; and here is the candidate string as it will be rendered by Emacs.
-  (overlay-put corfu--candidate-overlay  'after-string
+  (corfu--set-overlay-property  'after-string
                (propertize
                 candidate
                 'face (if (= how-many-candidates 1)
@@ -116,7 +125,7 @@
     ;; would need to recreate the object on basically each keystroke
     ;; and I don't like the perspective of it, would also flicker
     ;; for sure - so we keep the one overlay and we clear the contents.
-    (overlay-put corfu--candidate-overlay 'after-string "")))
+    (corfu--set-overlay-property 'after-string "")))
 
 (defun corfu-show-candidate-overlay ()
   "Computes completion candidates just like Corfu and updats the candidate
@@ -163,8 +172,7 @@
                       (string-prefix-p prefix candidate))
                      ;; and finally we update the overlay.
                      (corfu--candidate-overlay-update
-                      beg
-                      end
+                      end    ;; we anchor the overlay to the end position as cursor is there.
                       prefix
                       suffix
                       how-many-candidates)
@@ -181,6 +189,8 @@
   ;; We should not throw an error here, as Emacs will disable
   ;; the hook if it fails with an error.
   (ignore-errors
+    ;; This condition look similar to one in the post-command hook but it does
+    ;; differ significantly -- this one is in part reversed and less strict.
       (let* ((is-insert-command
               (corfu--match-symbol-p corfu-auto-commands this-command))
              (is-delete-command
@@ -188,10 +198,13 @@
         (when (and
                ;; we are not in minibuffer.
                (not (minibuffer-window-active-p (selected-window)))
+               ;; corfu menu shown
+               (and (frame-live-p corfu--frame) (frame-visible-p corfu--frame))
+               (not corfu-auto) ;; don't work with corfu-auto
                ;; and the command is not one of insert or delete.
                (not (or
                      is-insert-command
-                    is-delete-command)))
+                     is-delete-command)))
           (corfu-hide-candidate-overlay)))))
 
 (defun corfu--candidate-overlay-post-command ()
@@ -212,6 +225,9 @@
         (if (and
              ;; we are not in minibuffer, as it looks awkward.
              (not (minibuffer-window-active-p (selected-window)))
+             (not corfu-auto) ;; don't work with corfu-auto
+             ;; corfu menu needs to be hidden
+             (not (and (frame-live-p corfu--frame) (frame-visible-p corfu--frame)))
              (not (and ;; do not update if the point have not moved.
                    corfu--candidate-last-point
                    (= corfu--candidate-last-point (point))))
@@ -236,45 +252,47 @@
                 ;; of updating the overlay -- but using the previous auto suggestion candidate.
                 (when corfu--candidate-overlay ;; need overlay active
                   (let* ((candidate
-                          (overlay-get corfu--candidate-overlay  'corfu-candidate))
+                          (corfu--get-overlay-property  'corfu-candidate))
                          (prefix
-                          (overlay-get corfu--candidate-overlay  'corfu-prefix))
+                          (corfu--get-overlay-property  'corfu-prefix))
+                         (count
+                          (corfu--get-overlay-property  'corfu-count))
                          (previous-text
-                          (overlay-get corfu--candidate-overlay 'after-string)))
+                          (corfu--get-overlay-property 'after-string)))
                     ;; We need to deal with the overlay and stored candidate differently
                     ;; when inserting and deleting (i.e. we need to shift one characte from or to
                     ;; prefix to/from candidate)
                     (cond
-                     ;; TODO: Delete character case should probably be moved to pre-command hook.
+                     ;; TODO: Delete character case should probably be moved to pre-command hook?
                      (is-delete-command
                       (if (length> prefix 0)
-                          (progn
                           ;; we still have some characters present in the prefix,
                           ;; so we'll borrow one and move to the candidate.
-                          (overlay-put corfu--candidate-overlay  'corfu-candidate
-                                       (concat candidate (substring prefix (- (length prefix) 1))))
-                          (overlay-put corfu--candidate-overlay  'corfu-prefix
-                                       (substring prefix 0 (- (length prefix) 1 )))
-                          (overlay-put corfu--candidate-overlay  'after-string
-                                         (concat candidate (substring prefix (- (length prefix) 1))))
-                          (move-overlay corfu--candidate-overlay (point) (point)))
+                          (corfu--candidate-overlay-update
+                           (point) ;; move to current cursor's position
+                           (substring prefix 0 (- (length prefix) 1 ))
+                           (concat (substring prefix (- (length prefix) 1)) candidate)
+                           count)
                         ;; if the length of prefix is zero then we can only hide
                         ;; the overlay as we are removing past the current word
                         ;; boundary.
-                          (corfu-hide-candidate-overlay)))
+                        (corfu-hide-candidate-overlay)))
                      ;; Inserting character - we still update using historical data
                      ;; in case the corfu backend would get interrupted;
                      ;; Here we "borrow" a character from the candidate and append it to the prefix.
                      (is-insert-command
-                      (when (not (string-empty-p previous-text))
-                        (overlay-put corfu--candidate-overlay  'corfu-candidate
-                                     (and (length> candidate 1) (substring candidate 1 (- (length candidate) 1))))
-                        (overlay-put corfu--candidate-overlay  'corfu-prefix
-                                     (concat prefix (and (length> candidate 1) (substring candidate 0 1))))
-                        (overlay-put corfu--candidate-overlay 'after-string
-                                     (substring previous-text 1)))))
-
-                    (move-overlay corfu--candidate-overlay (point) (point))))
+                      (if (and
+                           (not (string-empty-p previous-text))
+                           (length> candidate 1))
+                          (corfu--candidate-overlay-update
+                           (point) ;; move to current cursor's position
+                           (concat prefix (substring candidate 0 1))
+                           (substring candidate 1 (length candidate))
+                           count)
+                        ;; no previous candidate or candidate is zero length,
+                        ;; probably we have reached the end of suggested word,
+                        ;; so let's hide the overlay.
+                        (corfu-hide-candidate-overlay))))))
                 ;; preserve the current position, show and update the overlay.
                 ;; the corfu-show-candidate-overlay CAN be interrupted, that's why
                 ;; we did the shuffling above.
@@ -289,10 +307,13 @@
   :global t
   :group 'corfu
   (if corfu-candidate-overlay-mode
-      (progn
+      (cond
+       ((not corfu-auto)
         (add-hook 'post-command-hook #'corfu--candidate-overlay-post-command)
         (add-hook 'pre-command-hook  #'corfu--candidate-overlay-pre-command)
         (message "Enabled `corfu-candidate-overlay-mode'."))
+       (t
+        (message "`corfu-auto' enabled, `corfu-candidate-overlay-mode' requires `corfu-auto' to be set to `nil'.")))
     (progn
       (remove-hook 'post-command-hook #'corfu--candidate-overlay-post-command)
       (remove-hook 'pre-command-hook  #'corfu--candidate-overlay-pre-command)
