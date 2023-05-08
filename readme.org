@@ -1,0 +1,79 @@
+#+TITLE: Corfu candidate overlay
+
+* Corfu candidate overlay package
+Simple [[https://github.com/minad/corfu][corfu]] as-you-type auto-suggestion candidate overlay with a visual indication of whether there are *many* or *exactly one* candidate available.
+** Picture is worth a thousand words
+Overlay during typing showing first auto-completion candidate when there are more than one (horizontal bar is the cursor):
+
+[[./readme-images/corfu-candidate-overlay-many.png]]
+
+Overlay showing auto-completion candidate when there is only one available (so invoking =completion-at-point= will complete without showing the completion menu):
+
+[[./readme-images/corfu-candidate-overlay-one.png]]
+
+It show the first auto-suggestion from [[https://github.com/minad/corfu][corfu]] and when there is only one it will show it underlined (face attributes can be configured). In case of many suggestions available, invoking =completion-at-point= will open the corfu popup menu to choose from, in case of single completion available (i.e. underlined) it will get auto-completed seeing the menu when invoked =completion-at-point=.
+** Motivation
+Similarly to Michell Hashimoto[fn:1] of HashiCorp fame, I like my editor to do less than more. I'm not as ascetic though ;-) From time to time I do use the auto-suggestion menu of [[https://github.com/minad/corfu][corfu]], especially when I forget the exact wording of a function. I do however trigger the auto-suggestion popup manually.
+
+My need was to see some kind of indication, that there are suggestion ready for what I type and also to discern there is exactly one, usually long, name that I could auto-complete quickly (i.e. without seeing the distracting popup menu). That's how this rather simple[fn:2] package was born.
+** Prior art
+As far as I'm aware [[http://company-mode.github.io/][company-mode]] provides similar, if not exactly the same, functionality out-of-the-box (company-mode is an alternative to corfu that preceded it).
+** Performance considerations
+When using slow or cpu-heavy corfu backends (e.g. [[https://github.com/minad/cape][cape's]] dict backend with a larger dictionary file[fn:3]) you may experience lagging when writing fast contrary to normal experience with standard corfu with auto-suggestions popup enabled. This is caused by querying completion candidates for each character insert or deletion contrary to a timer-based approach of corfu. Querying of the backends is done in an interruptible manner (this part is based on corfu's internals) but heavy operations while searching for suggestion candidates can cause micro-stutters still.
+* Installation instructions
+** Requirements
+[[https://github.com/minad/corfu][Corfu]] is required with the =corfu-auto= set to =nil= (i.e. auto popup of auto-suggestions disabled). It is recommended to bing =completion-at-point= to combination of keys that are easily reachable to you. I use =super + tab= (i.e. „windows key” and tab) but I do use a custom ergonomic keyboard, where those keys are not too far from the home row. You may want to bind it to =ctrl + tab=, for example:
+
+#+begin_src emacs-lisp
+  (global-set-key (kbd "C-<tab>") 'completion-at-point)
+#+end_src
+** Using straight.el
+#+begin_src emacs-lisp
+  (use-package corfu-candidate-overlay
+    :straight (:type git
+               :repo "https://code.bsdgeek.org/adam/corfu-candidate-overlay"
+               :files (:defaults "*.el"))
+    :after corfu
+    :config
+    ;; enable corfu-candidate-overlay mode globally
+    ;; this relies on having corfu-auto set to nil
+    (corfu-candidate-overlay-mode +1)
+    ;; bind Ctr + TAB to trigger the completion popup of corfu
+    (global-set-key (kbd "C-<tab>") 'completion-at-point))
+#+end_src
+** Customization
+Faces available for customization:
+
+- =corfu-candidate-overlay-face=
+
+  Defines the overlay text colour when there are more than one auto-suggestions available.
+  Defaults to „@@html:<span style="color:#8b7d7b; background:#ffffff;font-weight: bold;">@@MistyRose4@@html:</span>@@” for light themes and „@@html:<span style="color:#f5deb3; background:#000000;font-weight: bold;">@@wheat@@html:</span>@@” for dark themes.
+
+- =corfu-candidate-overlay-face-exact-match=
+
+  Defines the overlay's text colour when there is only one auto-suggestion present. By default inherits the =corfu-candidate-overlay-face= but adds =:underline t=.
+
+Custom variables available:
+
+- =corfu-overlay-auto-commands=
+
+  Additional commands apart from corfu's built-in =corfu-auto-commands= which initiate completion candidate overlay.
+  Default value: ~("delete-backward-char\\'" "backward-delete-char-untabify")~
+
+  Which tracks also character deletions and allows to see the overlay when you delete previously typed characters (i.e. when you made a typo and just need to track back, but still would like to see the completions overlay).
+* How to contribute
+
+The latest source code is available at https://code.bsdgeek.org/adam/corfu-candidate-overlay
+
+Issue reports, questions, comments and code patches are welcome -- you can send them to me over e-mail at adam /at/ kruszewski /dot/ name (please be patient as I'm not checking this account on a daily basis).
+
+If you haven't sent code patches via e-mail yet and would like to learn how to work with an e-mail based workflow, you can read more at [[https://git-scm.com/docs/git-format-patch][git format-patch]] man page or at [[https://git-send-email.io/][git-send-email.io]].
+
+* Footnotes
+
+[fn:1] See video cast:
+  [[https://www.youtube.com/watch?v=rysgxl35EGc][Worst Practices in Software Development: Mitchell Hashimoto uses a simple code editor]].
+
+[fn:2] As of version 1.0 there are ~200 lines of code with additional ~100 lines of comments.
+
+[fn:3] Cape's dict backend calls „grep” executable on the dictionary file when looking for completion candidates (it does cache the results, but still that's far from being free).
