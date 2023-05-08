@@ -50,20 +50,20 @@
 
 (defcustom corfu-overlay-auto-commands
   '("delete-backward-char\\'" "backward-delete-char-untabify")
-  "Additional commands apart from corfu-auto-commands which initiate
+  "Additional commands apart from ``corfu-auto-commands'' which initiate
    completion candidate overlay."
   :type '(repeat (choice regexp symbol))
   :group 'corfu)
 
-(defface corfu--candidate-overlay-face
+(defface corfu-candidate-overlay-face
   '((((background light))
      :foreground "MistyRose4")
     (((background dark))
      :foreground "wheat"))
   "Face used for the overlay with the first candidate.")
 
-(defface corfu--candidate-overlay-face-exact-match
-  '((t (:inherit 'corfu--candidate-overlay-face :underline t)))
+(defface corfu-candidate-overlay-face-exact-match
+  '((t (:inherit 'corfu-candidate-overlay-face :underline t)))
   "Face used for the overlay when there is only one candidate.")
 
 (defun corfu--candiate-overlay-prepare (position)
@@ -112,8 +112,8 @@
                (propertize
                 candidate
                 'face (if (= how-many-candidates 1)
-                          'corfu--candidate-overlay-face-exact-match
-                        'corfu--candidate-overlay-face)
+                          'corfu-candidate-overlay-face-exact-match
+                        'corfu-candidate-overlay-face)
                 'keymap corfu--candidate-overlay-map)))
 
 (defun corfu-hide-candidate-overlay ()
@@ -320,3 +320,4 @@
       (message "Disabled `corfu-candidate-overlay-mode'."))))
 
 ;;; corfu-candidate-overlay.el ends here
+(provide 'corfu-candidate-overlay)
