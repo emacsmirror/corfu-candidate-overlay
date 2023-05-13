@@ -18,6 +18,8 @@ Similarly to Michell Hashimoto[fn:1] of HashiCorp fame, I like my editor to do l
 My need was to see some kind of indication, that there are suggestion ready for what I type and also to discern there is exactly one, usually long, name that I could auto-complete quickly (i.e. without seeing the distracting popup menu). That's how this rather simple[fn:2] package was born.
 ** Prior art
 As far as I'm aware [[http://company-mode.github.io/][company-mode]] provides similar, if not exactly the same, functionality out-of-the-box (company-mode is an alternative to corfu that preceded it).
+
+[[https://codeberg.org/ideasman42/emacs-mono-complete][Emacs Mono-Complete]] is basically built around the overlay and shows only one completion. It provides number of backends and can be used, or jugding from the installation instructions, should be used independently (i.e. not with corfu). Judging from the cursory look at the source code on top of those it provides multi-file deabbrev like functionality using Python background process for extra performace and can complete whole lines.
 ** Performance considerations
 When using slow or cpu-heavy corfu backends (e.g. [[https://github.com/minad/cape][cape's]] dict backend with a larger dictionary file[fn:3]) you may experience lagging when writing fast contrary to normal experience with standard corfu with auto-suggestions popup enabled. This is caused by querying completion candidates for each character insert or deletion contrary to a timer-based approach of corfu. Querying of the backends is done in an interruptible manner (this part is based on corfu's internals) but heavy operations while searching for suggestion candidates can cause micro-stutters still.
 * Installation instructions
