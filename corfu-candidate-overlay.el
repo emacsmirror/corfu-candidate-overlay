@@ -199,7 +199,8 @@
                ;; we are not in minibuffer.
                (not (minibuffer-window-active-p (selected-window)))
                ;; corfu menu shown
-               (and (frame-live-p corfu--frame) (frame-visible-p corfu--frame))
+               (or (not corfu--frame)
+                   (and (frame-live-p corfu--frame) (frame-visible-p corfu--frame)))
                (not corfu-auto) ;; don't work with corfu-auto
                ;; and the command is not one of insert or delete.
                (not (or
