@@ -189,23 +189,35 @@
   ;; We should not throw an error here, as Emacs will disable
   ;; the hook if it fails with an error.
   (ignore-errors
-    ;; This condition look similar to one in the post-command hook but it does
-    ;; differ significantly -- this one is in part reversed and less strict.
       (let* ((is-insert-command
               (corfu--match-symbol-p corfu-auto-commands this-command))
              (is-delete-command
               (corfu--match-symbol-p corfu-overlay-auto-commands this-command)))
+        ;; first we check the short-circuit conditions
+        ;; to exit as early as possible, so when we know the overlay
+        ;; would not be present -- we don't check anything else.
         (when (and
-               ;; we are not in minibuffer.
+               ;; we are not in minibuffer; as we don't show overlay
+               ;; in the minibuffer so we don't need to hide it.
                (not (minibuffer-window-active-p (selected-window)))
-               ;; corfu menu shown
-               (or (not corfu--frame)
-                   (and (frame-live-p corfu--frame) (frame-visible-p corfu--frame)))
                (not corfu-auto) ;; don't work with corfu-auto
-               ;; and the command is not one of insert or delete.
-               (not (or
-                     is-insert-command
-                     is-delete-command)))
+               ;; short-circuit conditions are done, now real conditions
+               ;; that hide the overlay -- only one of those need to be met.
+               (or
+                ;; corfu menu is/was shown so we have to hide our own overlay.
+                (or
+                 (and corfu--frame ;; corfu menu not present,
+                                   ;; so no need to check for it.
+                      (frame-live-p corfu--frame)
+                      (frame-visible-p corfu--frame)))
+                ;; the command is not one of insert or delete,
+                ;; so we should hide the overlay as any movement.
+                ;; Reason is the command will „see” the point at the end of
+                ;; the overlay so cross-row movement will be off by the
+                ;; overlay's lenght.
+                (not (or
+                      is-insert-command
+                      is-delete-command))))
           (corfu-hide-candidate-overlay)))))
 
 (defun corfu--candidate-overlay-post-command ()
