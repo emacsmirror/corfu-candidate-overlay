@@ -57,7 +57,7 @@ Faces available for customization:
 
 Custom variables available:
 
-- =corfu-overlay-auto-commands=
+- =corfu-candidate-overlay-auto-commands=
 
   Additional commands apart from corfu's built-in =corfu-auto-commands= which initiate completion candidate overlay.
   Default value: ~("delete-backward-char\\'" "backward-delete-char-untabify")~
