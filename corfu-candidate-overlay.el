@@ -5,7 +5,7 @@
 ;; Author: Adam Kruszewski <adam@kruszewski.name>
 ;; Maintainer: Adam Kruszewski <adam@kruszewski.name>
 ;; Created: 2023
-;; Version: 1.2
+;; Version: 1.3
 ;; Package-Requires: ((emacs "28.1") (corfu "0.36"))
 ;; Homepage: https://code.bsdgeek.org/adam/corfu-candidate-overlay/
 
