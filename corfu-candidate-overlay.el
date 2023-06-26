@@ -50,8 +50,7 @@
 
 (defcustom corfu-candidate-overlay-auto-commands
   '("delete-backward-char\\'" "backward-delete-char-untabify")
-  "Additional commands apart from ``corfu-auto-commands'' which initiate
-   completion candidate overlay."
+  "Additional commands apart from ``corfu-auto-commands'' which initiate completion candidate overlay."
   :type '(repeat (choice regexp symbol))
   :group 'corfu)
 
@@ -67,8 +66,9 @@
   "Face used for the overlay when there is only one candidate.")
 
 (defun corfu-candidate-overlay--prepare (position)
-  "Sets the default properties of the candidates overlay.
-       The overlay can be dismissed with a mouse click."
+  "Set the default properties of the candidates overlay.
+Moves the overlay to `POSITION', creating it when needed.
+The overlay can be dismissed with a mouse click."
   (when (not corfu-candidate-overlay-map)
     (setq corfu-candidate-overlay-map (make-sparse-keymap))
     (define-key corfu-candidate-overlay-map (kbd "<mouse-1>")
@@ -84,15 +84,15 @@
       (overlay-put corfu-candidate-overlay--overlay  'priority 1000))))
 
 (defun corfu-candidate-overlay--get-overlay-property (property)
-  "Returns the value of overlays' property"
+  "Return the value of candidate overlay `PROPERTY`."
   (overlay-get corfu-candidate-overlay--overlay property))
 
 (defun corfu-candidate-overlay--set-overlay-property (property value)
-  "Returns the value of overlays' property"
+  "Set the `VALUE' of candidate overlay `PROPERTY'."
   (overlay-put corfu-candidate-overlay--overlay property value))
 
 (defun corfu-candidate-overlay--update (position prefix candidate how-many-candidates)
-  "Updates the candidate overlay with the first candidate found by Corfu."
+  "Update the candidate overlay with the first candidate found by Corfu.  Move the overlay to `POSITION` and store the `PREFIX` and `CANDIDATE` as overlay's properties.  Depending on the `HOW-MANY-CANDIDATES` the overlay face is set to either `corfu-candidate-overlay-face-exact-match' (exactly one match) or `corfu-candidate-overlay-face' (more matches)."
   (corfu-candidate-overlay--prepare position)
 
   (unless (string-empty-p candidate)
@@ -128,9 +128,11 @@
     (corfu-candidate-overlay--set-overlay-property 'after-string "")))
 
 (defun corfu-candidate-overlay--show ()
-  "Computes completion candidates just like Corfu and updats the candidate
-       overlay to reflect the first one. Uses different face when there is only
-       one candidate available (defaults to underline)."
+  "Show completion candidate overlay.
+Completion candidates are computed like Corfu does.
+The overlay is updated to reflect the first one found.
+Uses different face when there is only one candidate available
+\(defaults to underline), see ``corfu-candidate-overlay-face-exact-match' and `corfu-candidate-overlay-face' faces for customization"
   (let ((value (while-no-input ;; Interruptible capf query
                  (run-hook-wrapped 'completion-at-point-functions #'corfu--capf-wrapper))))
 
@@ -183,7 +185,7 @@
 
 (defun corfu-candidate-overlay--pre-command ()
   "Pre command hook to hide the overlay if the command is not insert or delete.
-   Otherwise the overlay can influence movement commands (i.e. the cursor is
+Otherwise the overlay can influence movement commands (i.e. the cursor is
    considered to be located at the end of the overlay, so line movement will
    jump to character far removed from the perceived cursor location)."
   ;; We should not throw an error here, as Emacs will disable
@@ -221,8 +223,7 @@
           (corfu-candidate-overlay--hide)))))
 
 (defun corfu-candidate-overlay--post-command ()
-  "Post command hook updating the candidate overlay when user inserts character
-   and the cursor is at the end of word."
+  "Post command hook updating the candidate overlay when user types character and the cursor is at the end of word."
   ;; We should not throw an error here, as Emacs will disable
   ;; the hook if it fails with an error (and auto suggestion backends
   ;; can and do throw errors sometimes, corfu even have a readme section
