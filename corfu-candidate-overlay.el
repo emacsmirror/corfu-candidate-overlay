@@ -48,7 +48,7 @@
 (defvar corfu-candidate-overlay-map nil
   "Keymap to dismiss the Corfu candidate overlay.")
 
-(defgroup cofru-candidate-overlay nil
+(defgroup corfu-candidate-overlay nil
   "Show first candidate in an overlay while typing."
   :prefix "corfu-candidate-overlay"
   :group 'corfu-candidate-overlay)
