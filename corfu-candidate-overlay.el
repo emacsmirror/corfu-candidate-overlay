@@ -1,6 +1,6 @@
 ;;; corfu-candidate-overlay.el --- Show first candidate in an overlay while typing -*- lexical-binding: t -*-
 
-;; Copyright (C) 2021-2023 Free Software Foundation, Inc.
+;; Copyright (C) 2021-2023 Adam Kruszewski
 
 ;; Author: Adam Kruszewski <adam@kruszewski.name>
 ;; Maintainer: Adam Kruszewski <adam@kruszewski.name>
@@ -9,7 +9,7 @@
 ;; Package-Requires: ((emacs "28.1") (corfu "0.36"))
 ;; Homepage: https://code.bsdgeek.org/adam/corfu-candidate-overlay/
 
-;; This file is part of GNU Emacs.
+;; This file is not part of GNU Emacs.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -48,9 +48,14 @@
 (defvar corfu-candidate-overlay-map nil
   "Keymap to dismiss the Corfu candidate overlay.")
 
+(defgroup cofru-candidate-overlay nil
+  "Show first candidate in an overlay while typing."
+  :prefix "corfu-candidate-overlay"
+  :group 'corfu-candidate-overlay)
+
 (defcustom corfu-candidate-overlay-auto-commands
   '("delete-backward-char\\'" "backward-delete-char-untabify")
-  "Additional commands apart from ``corfu-auto-commands'' which initiate completion candidate overlay."
+  "Additional commands apart ``corfu-auto-commands'' triggering candidate overlay."
   :type '(repeat (choice regexp symbol))
   :group 'corfu)
 
@@ -92,7 +97,11 @@ The overlay can be dismissed with a mouse click."
   (overlay-put corfu-candidate-overlay--overlay property value))
 
 (defun corfu-candidate-overlay--update (position prefix candidate how-many-candidates)
-  "Update the candidate overlay with the first candidate found by Corfu.  Move the overlay to `POSITION` and store the `PREFIX` and `CANDIDATE` as overlay's properties.  Depending on the `HOW-MANY-CANDIDATES` the overlay face is set to either `corfu-candidate-overlay-face-exact-match' (exactly one match) or `corfu-candidate-overlay-face' (more matches)."
+  "Update the candidate overlay with the first candidate found by Corfu.
+Move the overlay to `POSITION` and store the `PREFIX` and `CANDIDATE` as
+overlay's properties.  Depending on the `HOW-MANY-CANDIDATES` the overlay
+face is set to either `corfu-candidate-overlay-face-exact-match'
+\(exactly one match) or `corfu-candidate-overlay-face' (more matches)."
   (corfu-candidate-overlay--prepare position)
 
   (unless (string-empty-p candidate)
@@ -132,7 +141,8 @@ The overlay can be dismissed with a mouse click."
 Completion candidates are computed like Corfu does.
 The overlay is updated to reflect the first one found.
 Uses different face when there is only one candidate available
-\(defaults to underline), see ``corfu-candidate-overlay-face-exact-match' and `corfu-candidate-overlay-face' faces for customization"
+\(defaults to underline), see ``corfu-candidate-overlay-face-exact-match'
+and `corfu-candidate-overlay-face' faces for customization"
   (let ((value (while-no-input ;; Interruptible capf query
                  (run-hook-wrapped 'completion-at-point-functions #'corfu--capf-wrapper))))
 
@@ -223,7 +233,9 @@ Otherwise the overlay can influence movement commands (i.e. the cursor is
           (corfu-candidate-overlay--hide)))))
 
 (defun corfu-candidate-overlay--post-command ()
-  "Post command hook updating the candidate overlay when user types character and the cursor is at the end of word."
+  "Post command hook to update candidate overlay.
+Update happens when the user types character and the cursor is at
+the end of word."
   ;; We should not throw an error here, as Emacs will disable
   ;; the hook if it fails with an error (and auto suggestion backends
   ;; can and do throw errors sometimes, corfu even have a readme section
@@ -296,7 +308,7 @@ Otherwise the overlay can influence movement commands (i.e. the cursor is
                      ;; Here we "borrow" a character from the candidate and append it to the prefix.
                      (is-insert-command
                       (if (and
-                           (not (string-empty-p previous-text))
+                           (not (string= previous-text ""))
                            (length> candidate 1))
                           (corfu-candidate-overlay--update
                            (point) ;; move to current cursor's position
