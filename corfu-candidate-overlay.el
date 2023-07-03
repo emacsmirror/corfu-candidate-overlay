@@ -104,7 +104,7 @@ face is set to either `corfu-candidate-overlay-face-exact-match'
 \(exactly one match) or `corfu-candidate-overlay-face' (more matches)."
   (corfu-candidate-overlay--prepare position)
 
-  (unless (string-empty-p candidate)
+  (unless (string= candidate "")
     (add-text-properties 0 1 '(cursor 1) candidate))
 
   (overlay-put corfu-candidate-overlay--overlay  'window (selected-window))
@@ -177,7 +177,7 @@ and `corfu-candidate-overlay-face' faces for customization"
                       ;; need candidate, it should be present if we got here, but safety-first
                       candidate
                       ;; the prefix can't be empty (in case of corfu-auto-prefix equal 0)
-                      (not (string-empty-p prefix))
+                      (not (string= prefix ""))
                       ;; prefix need to match the candidate as there are „fuzzy”
                       ;; found candidates, esp. when using templates so the user
                       ;; could see strage results when typing the first character.
