@@ -276,7 +276,7 @@ the end of word."
             is-delete-command)
            ;; check whether we are at word boundardy.
            (corfu-candidate-overlay-at-word-boundary-p))
-          ;; ...when main compound conditions is true clause...
+          ;; ...when main/top-level compound if condition is true clause...
           (progn
             ;; When the completion backend is SLOW, i.e. like every LSP client,
             ;; then the overlay will often not update and will interfere with the typing.
@@ -330,7 +330,7 @@ the end of word."
             ;; we did the shuffling above.
             (setq corfu-candidate-overlay--last-point (point))
             (corfu-candidate-overlay--show))
-        ;; ...when main compound conditions is false clause...
+        ;; ...when main/top-level compound if condition is false clause...
         ;; so hide the overlay if the conditions to show the overlay where not met.
         (corfu-candidate-overlay--hide)))))
 
