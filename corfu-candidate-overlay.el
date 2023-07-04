@@ -342,8 +342,9 @@ the end of word."
       (and corfu-candidate-overlay--overlay
            (overlayp corfu-candidate-overlay--overlay)
            (corfu-candidate-overlay-at-word-boundary-p))
-
-    (insert (corfu-candidate-overlay--get-overlay-property 'corfu-candidate))))
+    (corfu-candidate-overlay--show)
+    (corfu-insert)
+    (corfu-quit)))
 
 ;;;###autoload
 (define-minor-mode corfu-candidate-overlay-mode
