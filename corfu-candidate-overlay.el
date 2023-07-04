@@ -343,8 +343,16 @@ the end of word."
            (overlayp corfu-candidate-overlay--overlay)
            (corfu-candidate-overlay-at-word-boundary-p))
     (corfu-candidate-overlay--show)
-    (corfu-insert)
-    (corfu-quit)))
+    (when (not
+           (string=
+            (corfu-candidate-overlay--get-overlay-property  'after-string)
+            ""))
+      ;; basically we emulate normal corfu's popup completion
+      ;; to have templates expanded as well.
+      (corfu-insert)
+      (completion-at-point)
+      (corfu-complete)
+      (corfu-quit))))
 
 ;;;###autoload
 (define-minor-mode corfu-candidate-overlay-mode
