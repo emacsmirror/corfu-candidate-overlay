@@ -5,7 +5,7 @@
 ;; Author: Adam Kruszewski <adam@kruszewski.name>
 ;; Maintainer: Adam Kruszewski <adam@kruszewski.name>
 ;; Created: 2023
-;; Version: 1.3
+;; Version: 1.4
 ;; Package-Requires: ((emacs "28.1") (corfu "0.36"))
 ;; Homepage: https://code.bsdgeek.org/adam/corfu-candidate-overlay/
 
@@ -232,6 +232,20 @@ Otherwise the overlay can influence movement commands (i.e. the cursor is
                       is-delete-command))))
           (corfu-candidate-overlay--hide)))))
 
+(defun corfu-candidate-overlay-at-word-boundary-p ()
+  "Return non-nil when cursor is at the word boundary for completion purposes.
+Or nil otherwise."
+  (let ((next-char (char-after)))
+    (or (not next-char) ;; end of file
+        ;; one of whitespace, quoting character, punctuation,
+        ;; closing bracket, etc is next.
+        ;; When those characters follow next completion won't trigger
+        ;; either-way: ' = * - + / ~ _ (have not investigated further),
+        ;; so they are not in the list.
+        (memq next-char '(?\s ?\t ?\r ?\n
+                              ?\" ?\` ?\) ?\] ?\>
+                              ?\. ?\, ?\: ?\;)))))
+
 (defun corfu-candidate-overlay--post-command ()
   "Post command hook to update candidate overlay.
 Update happens when the user types character and the cursor is at
@@ -242,90 +256,94 @@ the end of word."
   ;; dedicated to debugging those; but a timer corfu menu is using is much
   ;; more forgiving than how Emacs handle post and pre command hooks).
   (ignore-errors
-      (let* ((is-insert-command
-              (corfu--match-symbol-p corfu-auto-commands this-command))
-             (is-delete-command
-              (corfu--match-symbol-p corfu-candidate-overlay-auto-commands this-command)))
-        ;; short-circuit conditions -- the earlier we return if don't need to do
-        ;; anything the better.
-        (if (and
-             ;; we are not in minibuffer, as it looks awkward.
-             (not (minibuffer-window-active-p (selected-window)))
-             (not corfu-auto) ;; don't work with corfu-auto
-             ;; corfu menu needs to be hidden
-             (not (and (frame-live-p corfu--frame) (frame-visible-p corfu--frame)))
-             (not (and ;; do not update if the point have not moved.
-                   corfu-candidate-overlay--last-point
-                   (= corfu-candidate-overlay--last-point (point))))
-             (or  ;; do not update if it is not one of the insert or delete commands.
-              is-insert-command
-              is-delete-command))
-            ;; now we check additional short-circuit conditions, but those operate on
-            ;; next character.
-            (let ((next-char (char-after)))
-              (when (or  ;; do not update if we are not at the end of the word.
-                     (not next-char) ;; end of file
-                     ;; one of whitespace, quoting character, punctuation,
-                     ;; closing bracket, etc is next.
-                     ;; When those characters follow next completion won't trigger
-                     ;; either-way: ' = * - + / ~ _ (have not investigated further)
-                     (memq next-char '(?\s ?\t ?\r ?\n
-                                           ?\" ?\` ?\) ?\] ?\>
-                                           ?\. ?\, ?\: ?\;)))
-                ;; When the completion backend is SLOW, i.e. like every LSP client,
-                ;; then the overlay will often not update and will interfere with the typing.
-                ;; That's why we operate on stored prefix and candidate giving an illusion
-                ;; of updating the overlay -- but using the previous auto suggestion candidate.
-                (when corfu-candidate-overlay--overlay ;; need overlay active
-                  (let* ((candidate
-                          (corfu-candidate-overlay--get-overlay-property  'corfu-candidate))
-                         (prefix
-                          (corfu-candidate-overlay--get-overlay-property  'corfu-prefix))
-                         (count
-                          (corfu-candidate-overlay--get-overlay-property  'corfu-count))
-                         (previous-text
-                          (corfu-candidate-overlay--get-overlay-property 'after-string)))
-                    ;; We need to deal with the overlay and stored candidate differently
-                    ;; when inserting and deleting (i.e. we need to shift one characte from or to
-                    ;; prefix to/from candidate)
-                    (cond
-                     ;; TODO: Delete character case should probably be moved to pre-command hook?
-                     (is-delete-command
-                      (if (length> prefix 0)
-                          ;; we still have some characters present in the prefix,
-                          ;; so we'll borrow one and move to the candidate.
-                          (corfu-candidate-overlay--update
-                           (point) ;; move to current cursor's position
-                           (substring prefix 0 (- (length prefix) 1 ))
-                           (concat (substring prefix (- (length prefix) 1)) candidate)
-                           count)
-                        ;; if the length of prefix is zero then we can only hide
-                        ;; the overlay as we are removing past the current word
-                        ;; boundary.
-                        (corfu-candidate-overlay--hide)))
-                     ;; Inserting character - we still update using historical data
-                     ;; in case the corfu backend would get interrupted;
-                     ;; Here we "borrow" a character from the candidate and append it to the prefix.
-                     (is-insert-command
-                      (if (and
-                           (not (string= previous-text ""))
-                           (length> candidate 1))
-                          (corfu-candidate-overlay--update
-                           (point) ;; move to current cursor's position
-                           (concat prefix (substring candidate 0 1))
-                           (substring candidate 1 (length candidate))
-                           count)
-                        ;; no previous candidate or candidate is zero length,
-                        ;; probably we have reached the end of suggested word,
-                        ;; so let's hide the overlay.
-                        (corfu-candidate-overlay--hide))))))
-                ;; preserve the current position, show and update the overlay.
-                ;; the corfu-candidate-overlay--show CAN be interrupted, that's why
-                ;; we did the shuffling above.
-                (setq corfu-candidate-overlay--last-point (point))
-                (corfu-candidate-overlay--show)))
-          ;; or hide the overlay if the conditions to show the overlay where not met.
-          (corfu-candidate-overlay--hide)))))
+    (let* ((is-insert-command
+            (corfu--match-symbol-p corfu-auto-commands this-command))
+           (is-delete-command
+            (corfu--match-symbol-p corfu-candidate-overlay-auto-commands this-command)))
+      ;; short-circuit conditions -- the earlier we return, if don't need to do
+      ;; anything, the better.
+      (if (and
+           ;; we are not in minibuffer, as it looks awkward.
+           (not (minibuffer-window-active-p (selected-window)))
+           (not corfu-auto) ;; don't work with corfu-auto
+           ;; corfu menu needs to be hidden
+           (not (and (frame-live-p corfu--frame) (frame-visible-p corfu--frame)))
+           (not (and ;; do not update if the point have not moved.
+                 corfu-candidate-overlay--last-point
+                 (= corfu-candidate-overlay--last-point (point))))
+           (or  ;; do not update if it is not one of the insert or delete commands.
+            is-insert-command
+            is-delete-command)
+           ;; check whether we are at word boundardy.
+           (corfu-candidate-overlay-at-word-boundary-p))
+          ;; ...when main compound conditions is true clause...
+          (progn
+            ;; When the completion backend is SLOW, i.e. like every LSP client,
+            ;; then the overlay will often not update and will interfere with the typing.
+            ;; That's why we operate on stored prefix and candidate giving an illusion
+            ;; of updating the overlay -- but using the previous auto suggestion candidate.
+            (when corfu-candidate-overlay--overlay
+              (let* ((candidate
+                      (corfu-candidate-overlay--get-overlay-property  'corfu-candidate))
+                     (prefix
+                      (corfu-candidate-overlay--get-overlay-property  'corfu-prefix))
+                     (count
+                      (corfu-candidate-overlay--get-overlay-property  'corfu-count))
+                     (previous-text
+                      (corfu-candidate-overlay--get-overlay-property  'after-string)))
+                ;; We need to deal with the overlay and stored candidate differently
+                ;; when inserting and deleting (i.e. we need to shift one characte from or to
+                ;; prefix to/from candidate)
+                (cond
+                 ;; TODO: Delete character case should probably be moved to pre-command hook?
+                 (is-delete-command
+                  (if (length> prefix 0)
+                      ;; we still have some characters present in the prefix,
+                      ;; so we'll borrow one and move to the candidate.
+                      (corfu-candidate-overlay--update
+                       (point) ;; move to current cursor's position
+                       (substring prefix 0 (- (length prefix) 1 ))
+                       (concat (substring prefix (- (length prefix) 1)) candidate)
+                       count)
+                    ;; if the length of prefix is zero then we can only hide
+                    ;; the overlay as we are removing past the current word
+                    ;; boundary.
+                    (corfu-candidate-overlay--hide)))
+                 ;; Inserting character - we still update using historical data
+                 ;; in case the corfu backend would get interrupted;
+                 ;; Here we "borrow" a character from the candidate and append it to the prefix.
+                 (is-insert-command
+                  (if (and
+                       (not (string= previous-text ""))
+                       (length> candidate 1))
+                      (corfu-candidate-overlay--update
+                       (point) ;; move to current cursor's position
+                       (concat prefix (substring candidate 0 1))
+                       (substring candidate 1 (length candidate))
+                       count)
+                    ;; no previous candidate or candidate is zero length,
+                    ;; probably we have reached the end of suggested word,
+                    ;; so let's hide the overlay.
+                    (corfu-candidate-overlay--hide))))))
+            ;; preserve the current position, show and update the overlay.
+            ;; the corfu-candidate-overlay--show CAN be interrupted, that's why
+            ;; we did the shuffling above.
+            (setq corfu-candidate-overlay--last-point (point))
+            (corfu-candidate-overlay--show))
+        ;; ...when main compound conditions is false clause...
+        ;; so hide the overlay if the conditions to show the overlay where not met.
+        (corfu-candidate-overlay--hide)))))
+
+;;;###autoload
+(defun corfu-candidate-overlay-complete-at-point ()
+  "Insert the first completion candidate shown in the overlay."
+  (interactive)
+  (when
+      (and corfu-candidate-overlay--overlay
+           (overlayp corfu-candidate-overlay--overlay)
+           (corfu-candidate-overlay-at-word-boundary-p))
+
+    (insert (corfu-candidate-overlay--get-overlay-property 'corfu-candidate))))
 
 ;;;###autoload
 (define-minor-mode corfu-candidate-overlay-mode

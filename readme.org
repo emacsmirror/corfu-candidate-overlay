@@ -12,6 +12,8 @@ Overlay showing auto-completion candidate when there is only one available (so i
 [[./readme-images/corfu-candidate-overlay-one.png]]
 
 It show the first auto-suggestion from [[https://github.com/minad/corfu][corfu]] and when there is only one it will show it underlined (face attributes can be configured). In case of many suggestions available, invoking =completion-at-point= will open the corfu popup menu to choose from, in case of single completion available (i.e. underlined) it will get auto-completed seeing the menu when invoked =completion-at-point=.
+
+Package exposes also one interactive function =corfu-candidate-overlay-complete-at-point= which you can bind to a key combination. Invoking the function will complete the exact candidate overlay is currently showing[fn:4] (i.e. it will not show corfu's popup even if there are more candidates present, just complete what you see).
 ** Motivation
 Similarly to Michell Hashimoto[fn:1] of HashiCorp fame, I like my editor to do less than more. I'm not as ascetic though ;-) From time to time I do use the auto-suggestion menu of [[https://github.com/minad/corfu][corfu]], especially when I forget the exact wording of a function. I do however trigger the auto-suggestion popup manually.
 
@@ -40,8 +42,11 @@ When using slow or cpu-heavy corfu backends (e.g. [[https://github.com/minad/cap
     ;; enable corfu-candidate-overlay mode globally
     ;; this relies on having corfu-auto set to nil
     (corfu-candidate-overlay-mode +1)
-    ;; bind Ctr + TAB to trigger the completion popup of corfu
-    (global-set-key (kbd "C-<tab>") 'completion-at-point))
+    ;; bind Ctrl + TAB to trigger the completion popup of corfu
+    (global-set-key (kbd "C-<tab>") 'completion-at-point)
+    ;; bind Ctrl + Shift + Tab to trigger completion of the first candidate
+    ;; (keybing <iso-lefttab> may not work for your keyboard model)
+    (global-set-key (kbd "C-<iso-lefttab>") 'corfu-candidate-overlay-complete-at-point))
 #+end_src
 ** Customization
 Faces available for customization:
@@ -72,6 +77,7 @@ Issue reports, questions, comments and code patches are welcome -- you can send 
 If you haven't sent code patches via e-mail yet and would like to learn how to work with an e-mail based workflow, you can read more at [[https://git-scm.com/docs/git-format-patch][git format-patch]] man page or at [[https://git-send-email.io/][git-send-email.io]].
 
 * Footnotes
+[fn:4] Thanks to [[https://github.com/terlar][Terje Larsen]] for suggestion!
 
 [fn:1] See video cast:
   [[https://www.youtube.com/watch?v=rysgxl35EGc][Worst Practices in Software Development: Mitchell Hashimoto uses a simple code editor]].
