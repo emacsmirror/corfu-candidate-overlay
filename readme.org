@@ -23,7 +23,7 @@ As far as I'm aware [[http://company-mode.github.io/][company-mode]] provides si
 
 [[https://codeberg.org/ideasman42/emacs-mono-complete][Emacs Mono-Complete]] is basically built around the overlay and shows only one completion. It provides number of backends and can be used, or jugding from the installation instructions, should be used independently (i.e. not with corfu). Judging from the cursory look at the source code on top of those it provides multi-file deabbrev like functionality using Python background process for extra performace and can complete whole lines.
 ** Performance considerations
-When using slow or cpu-heavy corfu backends (e.g. [[https://github.com/minad/cape][cape's]] dict backend with a larger dictionary file[fn:3]) you may experience lagging when writing fast contrary to normal experience with standard corfu with auto-suggestions popup enabled. This is caused by querying completion candidates for each character insert or deletion contrary to a timer-based approach of corfu. Querying of the backends is done in an interruptible manner (this part is based on corfu's internals) but heavy operations while searching for suggestion candidates can cause micro-stutters still.
+When using a slow or cpu-heavy corfu backends (e.g. [[https://github.com/minad/cape][cape's]] dict backend with a larger dictionary file[fn:3]) you may experience more lagging when writing fast versus the experience you had when using standard corfu with auto-suggestions popup enabled (i.e. corfu with =corfu-auto= set to =true= will feel more /snappy/). Increasing =corfu-auto-prefix= can reduce the micro-stutters. Limiting backends you use can help as well.
 * Installation instructions
 ** Requirements
 [[https://github.com/minad/corfu][Corfu]] is required with the =corfu-auto= set to =nil= (i.e. auto popup of auto-suggestions disabled). It is recommended to bing =completion-at-point= to combination of keys that are easily reachable to you. I use =super + tab= (i.e. „windows key” and tab) but I do use a custom ergonomic keyboard, where those keys are not too far from the home row. You may want to bind it to =ctrl + tab=, for example:
@@ -84,4 +84,4 @@ If you haven't sent code patches via e-mail yet and would like to learn how to w
 
 [fn:2] As of version 1.0 there are ~200 lines of code with additional ~100 lines of comments.
 
-[fn:3] Cape's dict backend calls „grep” executable on the dictionary file when looking for completion candidates (it does cache the results, but still that's far from being free).
+[fn:3] At least on my setup, as I run Emacs inside a virtual machine, calls to „grep” cape-dict does seem expensive but it could be caused by the size of the dict file I was using. [[https://github.com/minad][Daniel Mendler]], corfu's author, suggested the problem is caused with larger completion tables rather than just calls to external process. YMMV.
