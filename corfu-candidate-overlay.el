@@ -372,5 +372,5 @@ the end of word."
       (remove-hook 'pre-command-hook  #'corfu-candidate-overlay--pre-command)
       (message "Disabled `corfu-candidate-overlay-mode'."))))
 
-;;; corfu-candidate-overlay.el ends here
 (provide 'corfu-candidate-overlay)
+;;; corfu-candidate-overlay.el ends here
