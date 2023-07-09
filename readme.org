@@ -1,7 +1,7 @@
 #+TITLE: Corfu candidate overlay
 
 #+attr_html: :width 140px
-[[https://melpa.org/#/corfu-candidate-overlay][file:https://melpa.org/packages/corfu-candidate-overlay-badge.svg]]
+[[https://melpa.org/packages/corfu-candidate-overlay-badge.svg]]
 
 * Corfu candidate overlay package
 Simple [[https://github.com/minad/corfu][corfu]] as-you-type auto-suggestion candidate overlay with a visual indication of whether there are *many* or *exactly one* candidate available.
