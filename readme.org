@@ -1,5 +1,8 @@
 #+TITLE: Corfu candidate overlay
 
+#+attr_html: :width 140px
+[[https://melpa.org/#/corfu-candidate-overlay][file:https://melpa.org/packages/corfu-candidate-overlay-badge.svg]]
+
 * Corfu candidate overlay package
 Simple [[https://github.com/minad/corfu][corfu]] as-you-type auto-suggestion candidate overlay with a visual indication of whether there are *many* or *exactly one* candidate available.
 ** Picture is worth a thousand words
@@ -31,7 +34,9 @@ When using a slow or cpu-heavy corfu backends (e.g. [[https://github.com/minad/c
 #+begin_src emacs-lisp
   (global-set-key (kbd "C-<tab>") 'completion-at-point)
 #+end_src
-** Using straight.el
+** Using [[https://melpa.org/#/corfu-candidate-overlay][MELPA]]
+Corfu-candidate-overlay is available on [[https://melpa.org/#/corfu-candidate-overlay][MELPA]]. You can install the package using the =package-install= function.
+** Using [[https://github.com/radian-software/straight.el][straight.el]]
 #+begin_src emacs-lisp
   (use-package corfu-candidate-overlay
     :straight (:type git
