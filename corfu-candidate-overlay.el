@@ -351,7 +351,9 @@ the end of word."
       ;; to have templates expanded as well.
       (corfu-insert)
       (completion-at-point)
-      (corfu-complete)
+      ;; TODO: Not sure why it sometimes breaks with dabbrev backend. Need to investigate.
+      (ignore-errors
+        (corfu-complete))
       (corfu-quit))))
 
 ;;;###autoload
