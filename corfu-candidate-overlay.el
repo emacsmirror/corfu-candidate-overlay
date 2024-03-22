@@ -5,7 +5,7 @@
 ;; Author: Adam Kruszewski <adam@kruszewski.name>
 ;; Maintainer: Adam Kruszewski <adam@kruszewski.name>
 ;; Created: 2023
-;; Version: 1.5
+;; Version: 1.6
 ;; Package-Requires: ((emacs "28.1") (corfu "0.36"))
 ;; Homepage: https://code.bsdgeek.org/adam/corfu-candidate-overlay/
 
@@ -263,6 +263,9 @@ the end of word."
       ;; short-circuit conditions -- the earlier we return, if don't need to do
       ;; anything, the better.
       (if (and
+           ;; when region selected, as the cursor will be placed wrong.
+           ;; (thanks Jeff Phillips for this contribution!)
+           (not (region-active-p))
            ;; we are not in minibuffer, as it looks awkward.
            (not (minibuffer-window-active-p (selected-window)))
            (not corfu-auto) ;; don't work with corfu-auto
